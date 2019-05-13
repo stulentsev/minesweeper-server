@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
+	"time"
 )
 
 type apiError struct {
@@ -18,6 +20,8 @@ type MoveInfo struct {
 }
 
 func main() {
+	rand.Seed(time.Now().Unix())
+
 	http.HandleFunc("/newgame", newgameHandler)
 	http.HandleFunc("/move", moveHandler)
 	http.HandleFunc("/", readmeHandler)
