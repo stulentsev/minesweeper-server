@@ -1,0 +1,78 @@
+---
+consumes:
+  - application/json
+info:
+  description: An API server for Minesweeper game
+  title: An API server for Minesweeper game
+  version: 1.0.0
+produces:
+  - application/json
+schemes:
+  - http
+  - https
+swagger: "2.0"
+host: still-coast-93378.herokuapp.com
+definitions:
+  game:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        readOnly: true
+      status:
+        type: string
+        readOnly: true
+
+      board_width:
+        type: integer
+        minimum: 0
+        readOnly: true
+
+      board_height:
+        type: integer
+        minimum: 0
+        readOnly: true
+      mines_count:
+        type: integer
+        minimum: 0
+        readOnly: true
+      board_state:
+        type: array
+        items:
+          type: string
+      pretty_board_state:
+        type: string
+  move_info:
+    type: object
+    properties:
+      game_id:
+        type: string
+        format: uuid
+      x:
+        type: integer
+        minimum: 0
+      'y':
+        type: integer
+        minimum: 0
+paths:
+  /newgame:
+    post:
+      responses:
+        200:
+          description: create a new game and return board state
+          schema:
+            $ref: '#/definitions/game'
+  /move:
+    post:
+      parameters:
+        - in: body
+          name: move_info
+          description: Data about your move
+          schema:
+            $ref: '#/definitions/move_info'
+      responses:
+        200:
+          description: return updated board state
+          schema:
+            $ref: '#/definitions/game'
