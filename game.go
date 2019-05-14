@@ -34,7 +34,17 @@ type Game struct {
 	PrettyBoardState string `json:"pretty_board_state"`
 }
 
-func (game *Game) InitBoardState() {
+func (game *Game) initRevealedBoardState() {
+	game.RevealedBoardState = make([]CellState, game.BoardWidth*game.BoardHeight)
+
+	for idx := range game.RevealedBoardState {
+		game.RevealedBoardState[idx] = CellStateUnknown
+	}
+
+	game.prettyPrintBoard()
+}
+
+func (game *Game) initTrueBoardState(firstClickX, firstClickY uint32) {
 	game.trueBoardState = make([]CellState, game.BoardWidth*game.BoardHeight)
 	for b := uint32(0); b < game.MinesCount; {
 		if b >= game.MinesCount {
@@ -43,6 +53,9 @@ func (game *Game) InitBoardState() {
 
 		x := rand.Intn(int(game.BoardWidth))
 		y := rand.Intn(int(game.BoardHeight))
+		if areCellsAdjacent(x, y, int(firstClickX), int(firstClickY)) { // guaranteed empty space at first click
+			continue
+		}
 
 		offset := y*int(game.BoardWidth) + x
 		if game.trueBoardState[offset] != CellStateBomb {
@@ -55,15 +68,17 @@ func (game *Game) InitBoardState() {
 			game.trueBoardState[idx] = CellStateEmpty
 		}
 	}
+}
 
-	game.RevealedBoardState = make([]CellState, len(game.trueBoardState))
+func areCellsAdjacent(x1 int, y1 int, x2 int, y2 int) bool {
+	return absInt(x1-x2) < 2 && absInt(y1-y2) < 2
+}
 
-	for idx := range game.RevealedBoardState {
-		game.RevealedBoardState[idx] = CellStateUnknown
+func absInt(num int) int {
+	if num < 0 {
+		return -num
 	}
-
-	game.prettyPrintBoard()
-
+	return num
 }
 
 func (game *Game) prettyPrintBoard() {
@@ -72,6 +87,10 @@ func (game *Game) prettyPrintBoard() {
 	game.PrettyBoardState = buf.String()
 }
 func (game *Game) Open(x, y uint32) error {
+	if game.trueBoardState == nil {
+		game.initTrueBoardState(x, y)
+	}
+
 	fmt.Printf("open: x %d, y %d\n", x, y)
 	if game.Status != "" {
 		return errors.New("can't play a finished game")
@@ -100,11 +119,15 @@ func (game *Game) DebugPrint() {
 	fmt.Println("Game", game.Id)
 	fmt.Printf("board %d x %d, with %d mines\n", game.BoardWidth, game.BoardHeight, game.MinesCount)
 
-	fmt.Println("Revealed state")
-	printBoardState(os.Stdout, game, game.RevealedBoardState)
+	if game.RevealedBoardState != nil {
+		fmt.Println("Revealed state")
+		printBoardState(os.Stdout, game, game.RevealedBoardState)
+	}
 
-	fmt.Println("True state")
-	printBoardState(os.Stdout, game, game.trueBoardState)
+	if game.trueBoardState != nil {
+		fmt.Println("True state")
+		printBoardState(os.Stdout, game, game.trueBoardState)
+	}
 
 	fmt.Println(">>>>>>>>>>>>>>>>")
 }
@@ -218,6 +241,6 @@ func NewGame() *Game {
 		BoardHeight: 8,
 		MinesCount:  10,
 	}
-	game.InitBoardState()
+	game.initRevealedBoardState()
 	return game
 }
