@@ -3,10 +3,10 @@ require 'bundler'
 Bundler.require
 
 class ApiClient
-
   def initialize(host)
     @host = host
     @connection = Excon.new(host)
+    puts "Working with #{host.yellow}"
   end
 
   def new_game
@@ -46,7 +46,8 @@ class ApiClient
 
 end
 
-@client = ApiClient.new("http://localhost:3000")
+# @client = ApiClient.new("http://localhost:3000")
+@client = ApiClient.new("https://still-coast-93378.herokuapp.com/")
 
 def new_game
   @client.new_game
