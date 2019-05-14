@@ -13,8 +13,9 @@ type apiError struct {
 	Error string `json:"error"`
 }
 
+// MoveInfo describes data about player's move
 type MoveInfo struct {
-	GameId string `json:"game_id"`
+	GameID string `json:"game_id"`
 	X      uint32 `json:"x"`
 	Y      uint32 `json:"y"`
 }
@@ -39,8 +40,8 @@ func main() {
 
 func newgameHandler(writer http.ResponseWriter, request *http.Request) {
 	game := NewGame()
-	knownGames[game.Id] = game
-	renderJson(writer, game)
+	knownGames[game.ID] = game
+	renderJSON(writer, game)
 	game.DebugPrint()
 }
 
@@ -56,40 +57,39 @@ func moveHandler(writer http.ResponseWriter, request *http.Request) {
 	err := decoder.Decode(&moveInfo)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		renderJson(writer, apiError{err.Error()})
+		renderJSON(writer, apiError{err.Error()})
 		return
 	}
 	fmt.Printf("%+v\n", moveInfo)
 
-	var gameId string
+	var gameID string
 
-	gameId = moveInfo.GameId
-	if gameId == "" {
+	gameID = moveInfo.GameID
+	if gameID == "" {
 		writer.WriteHeader(http.StatusBadRequest)
-		renderJson(writer, apiError{"must provide a valid game_id"})
+		renderJSON(writer, apiError{"must provide a valid game_id"})
 		return
 	}
 
-	game, exists := knownGames[gameId]
+	game, exists := knownGames[gameID]
 	if !exists {
 		writer.WriteHeader(http.StatusNotFound)
-		renderJson(writer, apiError{"game is not found"})
+		renderJSON(writer, apiError{"game is not found"})
 		return
 	}
-	err = game.Open(moveInfo.X, moveInfo.Y)
+	err = game.Open(int(moveInfo.X), int(moveInfo.Y))
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		renderJson(writer, apiError{err.Error()})
+		renderJSON(writer, apiError{err.Error()})
 		return
 	}
 
-	fmt.Println("finish open")
 	game.DebugPrint()
 
-	renderJson(writer, game)
+	renderJSON(writer, game)
 }
 
-func renderJson(w http.ResponseWriter, payload interface{}) {
+func renderJSON(w http.ResponseWriter, payload interface{}) {
 	js, err := json.Marshal(payload)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -12,22 +12,24 @@ import (
 	"strings"
 )
 
+// CellState is a kind of enum
 type CellState string
 
 const (
-	CellStateUnknown = CellState("?")
-	CellStateBomb    = CellState("*")
-	CellStateEmpty   = CellState(" ")
+	cellStateUnknown = CellState("?")
+	cellStateBomb    = CellState("*")
+	cellStateEmpty   = CellState(" ")
 )
 
 var knownGames = make(map[string]*Game)
 
+// Game describes board state and dimensions
 type Game struct {
-	Id                 string      `json:"game_id"`
+	ID                 string      `json:"game_id"`
 	Status             string      `json:"status,omitempty"`
-	BoardWidth         uint32      `json:"board_width"`
-	BoardHeight        uint32      `json:"board_height"`
-	MinesCount         uint32      `json:"mines_count"`
+	BoardWidth         int      `json:"board_width"`
+	BoardHeight        int      `json:"board_height"`
+	MinesCount         int      `json:"mines_count"`
 	RevealedBoardState []CellState `json:"board_state"`
 	trueBoardState     []CellState
 
@@ -38,15 +40,16 @@ func (game *Game) initRevealedBoardState() {
 	game.RevealedBoardState = make([]CellState, game.BoardWidth*game.BoardHeight)
 
 	for idx := range game.RevealedBoardState {
-		game.RevealedBoardState[idx] = CellStateUnknown
+		game.RevealedBoardState[idx] = cellStateUnknown
 	}
 
 	game.prettyPrintBoard()
 }
 
-func (game *Game) initTrueBoardState(firstClickX, firstClickY uint32) {
+func (game *Game) initTrueBoardState(firstClickX, firstClickY int) {
 	game.trueBoardState = make([]CellState, game.BoardWidth*game.BoardHeight)
-	for b := uint32(0); b < game.MinesCount; {
+	b := 0
+	for  {
 		if b >= game.MinesCount {
 			break
 		}
@@ -58,20 +61,20 @@ func (game *Game) initTrueBoardState(firstClickX, firstClickY uint32) {
 		}
 
 		offset := y*int(game.BoardWidth) + x
-		if game.trueBoardState[offset] != CellStateBomb {
-			game.trueBoardState[offset] = CellStateBomb
+		if game.trueBoardState[offset] != cellStateBomb {
+			game.trueBoardState[offset] = cellStateBomb
 			b++
 		}
 	}
 	for idx := range game.trueBoardState {
-		if game.trueBoardState[idx] != CellStateBomb {
-			game.trueBoardState[idx] = CellStateEmpty
+		if game.trueBoardState[idx] != cellStateBomb {
+			game.trueBoardState[idx] = cellStateEmpty
 		}
 	}
 }
 
 func areCellsAdjacent(x1 int, y1 int, x2 int, y2 int) bool {
-	return absInt(x1-x2) < 2 && absInt(y1-y2) < 2
+	return absInt(x1-x2) <= 1 && absInt(y1-y2) <= 1
 }
 
 func absInt(num int) int {
@@ -86,23 +89,26 @@ func (game *Game) prettyPrintBoard() {
 	printBoardState(&buf, game, game.RevealedBoardState)
 	game.PrettyBoardState = buf.String()
 }
-func (game *Game) Open(x, y uint32) error {
+
+// Open reveals a cell on the board
+func (game *Game) Open(x, y int) error {
 	if game.trueBoardState == nil {
 		game.initTrueBoardState(x, y)
 	}
 
-	fmt.Printf("open: x %d, y %d\n", x, y)
 	if game.Status != "" {
 		return errors.New("can't play a finished game")
 	}
 	offset := y*game.BoardWidth + x
-	cellState := game.trueBoardState[int(offset)]
-	if cellState == CellStateBomb {
+	fmt.Printf("open: x %d, y %d\n", x, y)
+
+	cellState := game.trueBoardState[offset]
+	if cellState == cellStateBomb {
 		game.Status = "loss"
 		game.revealBombs()
 	}
 
-	if cellState == CellStateEmpty {
+	if cellState == cellStateEmpty {
 		game.revealEmptyAt(x, y)
 	}
 
@@ -114,9 +120,10 @@ func (game *Game) Open(x, y uint32) error {
 	return nil
 }
 
+// DebugPrint pretty-prints game state (revealed/true state, etc.)
 func (game *Game) DebugPrint() {
 	fmt.Println("<<<<<<<<<<<<<<<<")
-	fmt.Println("Game", game.Id)
+	fmt.Println("Game", game.ID)
 	fmt.Printf("board %d x %d, with %d mines\n", game.BoardWidth, game.BoardHeight, game.MinesCount)
 
 	if game.RevealedBoardState != nil {
@@ -134,19 +141,19 @@ func (game *Game) DebugPrint() {
 
 func (game *Game) revealBombs() {
 	for idx, cellState := range game.trueBoardState {
-		if cellState == CellStateBomb {
+		if cellState == cellStateBomb {
 			game.RevealedBoardState[idx] = cellState
 		}
 	}
 }
 
-func (game *Game) revealEmptyAt(x, y uint32) {
+func (game *Game) revealEmptyAt(x, y int) {
 	if x < 0 || y < 0 || x >= game.BoardWidth || y >= game.BoardHeight {
 		return
 	}
 	offset := y*game.BoardWidth + x
 
-	if game.RevealedBoardState[offset] != CellStateUnknown {
+	if game.RevealedBoardState[offset] != cellStateUnknown {
 		return
 	}
 
@@ -162,7 +169,7 @@ func (game *Game) revealEmptyAt(x, y uint32) {
 		game.bombsAt(x+1, y+1)
 
 	if bombCount == 0 { // spread
-		game.RevealedBoardState[offset] = CellStateEmpty
+		game.RevealedBoardState[offset] = cellStateEmpty
 
 		game.revealEmptyAt(x-1, y-1)
 		game.revealEmptyAt(x, y-1)
@@ -179,13 +186,13 @@ func (game *Game) revealEmptyAt(x, y uint32) {
 	}
 }
 
-func (game *Game) bombsAt(x, y uint32) int {
+func (game *Game) bombsAt(x, y int) int {
 	if x < 0 || y < 0 || x >= game.BoardWidth || y >= game.BoardHeight {
 		return 0
 	}
 	offset := y*game.BoardWidth + x
 
-	if game.trueBoardState[offset] == CellStateBomb {
+	if game.trueBoardState[offset] == cellStateBomb {
 		return 1
 	}
 	return 0
@@ -193,8 +200,8 @@ func (game *Game) bombsAt(x, y uint32) int {
 
 func (game *Game) onlyBombsRemainHidden() bool {
 	for idx, cellState := range game.RevealedBoardState {
-		if cellState == CellStateUnknown {
-			if game.trueBoardState[idx] != CellStateBomb {
+		if cellState == cellStateUnknown {
+			if game.trueBoardState[idx] != cellStateBomb {
 				return false
 			}
 		}
@@ -215,7 +222,7 @@ func printBoardState(w io.Writer, game *Game, states []CellState) {
 	for i := 0; i < int(game.BoardHeight); i++ {
 		fmt.Fprint(w, verticalLine)
 		for j := 0; j < int(game.BoardWidth); j++ {
-			idx := j + i*int(game.BoardHeight)
+			idx := j + i*int(game.BoardWidth)
 			fmt.Fprint(w, states[idx])
 			fmt.Fprint(w, " ")
 		}
@@ -225,19 +232,20 @@ func printBoardState(w io.Writer, game *Game, states []CellState) {
 
 }
 
-func newGameId() string {
-	randomId, err := uuid.NewUUID()
+func newGameID() string {
+	randomID, err := uuid.NewUUID()
 	if err != nil {
 		panic(err)
 	}
-	return randomId.String()
+	return randomID.String()
 }
 
+// NewGame creates a new board
 func NewGame() *Game {
-	id := newGameId()
+	id := newGameID()
 	game := &Game{
-		Id:          id,
-		BoardWidth:  8,
+		ID:          id,
+		BoardWidth: 8,
 		BoardHeight: 8,
 		MinesCount:  10,
 	}
