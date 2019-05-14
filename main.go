@@ -90,7 +90,12 @@ func moveHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func renderJson(w http.ResponseWriter, payload interface{}) {
-	encoder := json.NewEncoder(w)
-	_ = encoder.Encode(payload)
+	js, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }

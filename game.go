@@ -70,8 +70,6 @@ func (game *Game) prettyPrintBoard() {
 	buf := bytes.Buffer{}
 	printBoardState(&buf, game, game.RevealedBoardState)
 	game.PrettyBoardState = buf.String()
-	fmt.Println("pretty board")
-	fmt.Println(game.PrettyBoardState)
 }
 func (game *Game) Open(x, y uint32) error {
 	fmt.Printf("open: x %d, y %d\n", x, y)
