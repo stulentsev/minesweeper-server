@@ -100,7 +100,7 @@ func (game *Game) Open(x, y int) error {
 		return errors.New("can't play a finished game")
 	}
 	offset := y*game.BoardWidth + x
-	fmt.Printf("open: x %d, y %d\n", x, y)
+	//fmt.Printf("open: x %d, y %d\n", x, y)
 
 	cellState := game.trueBoardState[offset]
 	if cellState == cellStateBomb {
@@ -245,9 +245,19 @@ func NewGame() *Game {
 	id := newGameID()
 	game := &Game{
 		ID:          id,
-		BoardWidth: 8,
-		BoardHeight: 8,
-		MinesCount:  10,
+
+		//BoardWidth: 8,
+		//BoardHeight: 8,
+		//MinesCount:  10,
+
+		//BoardWidth: 16,
+		//BoardHeight: 16,
+		//MinesCount:  40,
+
+		BoardWidth: 30,
+		BoardHeight: 16,
+		MinesCount:  99,
+
 	}
 	game.initRevealedBoardState()
 	return game

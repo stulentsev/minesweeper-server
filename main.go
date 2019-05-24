@@ -42,7 +42,7 @@ func newgameHandler(writer http.ResponseWriter, request *http.Request) {
 	game := NewGame()
 	knownGames[game.ID] = game
 	renderJSON(writer, game)
-	game.DebugPrint()
+	//game.DebugPrint()
 }
 
 func readmeHandler(writer http.ResponseWriter, request *http.Request) {
@@ -84,7 +84,7 @@ func moveHandler(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	game.DebugPrint()
+	//game.DebugPrint()
 
 	renderJSON(writer, game)
 }
